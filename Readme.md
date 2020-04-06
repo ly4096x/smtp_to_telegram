@@ -54,3 +54,17 @@ docker run \
     -e ST_TELEGRAM_MESSAGE_TEMPLATE="Subject: {subject}\\n\\n{body}" \
     kostyaesmukov/smtp_to_telegram
 ```
+
+To enable HTML or Markdown format parsing:
+
+(Not supported by prebuilt image. See Telegram official document for `parse_mode` values)
+
+```
+docker run \
+    --name smtp_to_telegram \
+    -e ST_TELEGRAM_CHAT_IDS=<CHAT_ID1>,<CHAT_ID2> \
+    -e ST_TELEGRAM_BOT_TOKEN=<BOT_TOKEN> \
+    -e ST_TELEGRAM_API_POSTFIX="&parse_mode=html" \
+    -e ST_TELEGRAM_MESSAGE_TEMPLATE="<b>{subject}</b>\\n{from} -> {to}\\n{body}" \
+    smtp_to_telegram
+```
