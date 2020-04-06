@@ -1,0 +1,13 @@
+version: '3'
+services:
+  smtp_to_telegram:
+    image: smtp_to_telegram
+    user: nobody:nogroup
+    environment:
+      - TZ=America/New_York
+      - ST_TELEGRAM_CHAT_IDS=00000000 # put yours here
+      - ST_TELEGRAM_BOT_TOKEN=111111111:asdak3k2j3j2kjkj2 # put yours here
+      - ST_TELEGRAM_API_POSTFIX=&parse_mode=html
+      - ST_TELEGRAM_MESSAGE_TEMPLATE=<b>{subject}</b>\n{from} -> {to}\n{body}
+      - ST_SMTP_LISTEN=0.0.0.0:2525
+    restart: unless-stopped

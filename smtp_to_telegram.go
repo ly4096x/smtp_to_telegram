@@ -28,6 +28,7 @@ type TelegramConfig struct {
 	telegramChatIds   string
 	telegramBotToken  string
 	telegramApiPrefix string
+	telegramApiPostfix string
 	messageTemplate   string
 }
 
@@ -61,6 +62,7 @@ func main() {
 			telegramChatIds:   c.String("telegram-chat-ids"),
 			telegramBotToken:  c.String("telegram-bot-token"),
 			telegramApiPrefix: c.String("telegram-api-prefix"),
+			telegramApiPostfix: c.String("telegram-api-postfix"),
 			messageTemplate:   c.String("message-template"),
 		}
 		d, err := SmtpStart(smtpConfig, telegramConfig)
@@ -98,6 +100,12 @@ func main() {
 			Usage:   "Telegram: API url prefix",
 			Value:   "https://api.telegram.org/",
 			EnvVars: []string{"ST_TELEGRAM_API_PREFIX"},
+		},
+		&cli.StringFlag{
+			Name:    "telegram-api-postfix",
+			Usage:   "Telegram: API url postfix",
+			Value:   "",
+			EnvVars: []string{"ST_TELEGRAM_API_POSTFIX"},
 		},
 		&cli.StringFlag{
 			Name:    "message-template",
@@ -176,9 +184,10 @@ func SendEmailToTelegram(e *mail.Envelope,
 		// See: https://golang.org/pkg/net/http/#ProxyFromEnvironment
 		resp, err := http.PostForm(
 			fmt.Sprintf(
-				"%sbot%s/sendMessage?disable_web_page_preview=true",
+				"%sbot%s/sendMessage?disable_web_page_preview=true%s",
 				telegramConfig.telegramApiPrefix,
 				telegramConfig.telegramBotToken,
+				telegramConfig.telegramApiPostfix,
 			),
 			url.Values{"chat_id": {chatId}, "text": {message}},
 		)
