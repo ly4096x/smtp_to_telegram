@@ -1,4 +1,5 @@
-FROM golang:1.13-alpine3.10 AS builder
+#FROM golang:1.13-alpine3.10 AS builder
+FROM golang:alpine3.10 AS builder
 
 RUN apk add --no-cache git ca-certificates
 
@@ -19,7 +20,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
 
 
 
-FROM alpine:3.10
+FROM alpine
+#FROM alpine:3.10
 
 RUN apk add --no-cache ca-certificates
 
