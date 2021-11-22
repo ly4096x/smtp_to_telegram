@@ -2,6 +2,8 @@ version: '3'
 services:
   smtp_to_telegram:
     image: smtp_to_telegram
+    container_name: smtp_to_telegram
+    build: .
     user: nobody:nogroup
     environment:
       - TZ=America/New_York
