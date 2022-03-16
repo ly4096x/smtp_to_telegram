@@ -1,5 +1,2 @@
-
-.env
-*vendor*
-
-smtp_to_telegram
+/smtp_to_telegram
+/docker-compose.yaml
