@@ -13,5 +13,5 @@ runs:
     - id: result-step
       shell: bash
       run: |
-        docker run --rm -v $PWD/.ci/check-os-update.sh:/check-os-update.sh:ro --entrypoint /bin/sh ${{ inputs.package-tag }} /check-os-update.sh && true
+        docker run --rm -u=root -v $PWD/.ci/check-os-update.sh:/check-os-update.sh:ro --entrypoint /bin/sh ${{ inputs.package-tag }} /check-os-update.sh && true
         echo "::set-output name=result::$?"
