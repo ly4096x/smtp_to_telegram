@@ -1273,6 +1273,7 @@ dependencies = [
  "rustls-native-certs",
  "serde",
  "serde_json",
+ "socket2",
  "tokio",
  "tracing",
  "tracing-subscriber",

@@ -86,9 +86,11 @@ in
       ];
       description = ''
         Addresses to accept SMTP on. Ports below 1024 work: the service has
-        CAP_NET_BIND_SERVICE. A specific address must exist when the service
-        starts; to accept on some interfaces only, listening on the wildcard
-        address and filtering with the firewall is the robust choice.
+        CAP_NET_BIND_SERVICE. IPv6 addresses are bound IPv6-only, so list
+        both wildcards (as in the example) to accept both families. A
+        specific address must exist when the service starts; to accept on
+        some interfaces only, listening on the wildcard addresses and
+        filtering with the firewall is the robust choice.
       '';
     };
 

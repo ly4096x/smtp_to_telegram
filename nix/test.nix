@@ -44,7 +44,10 @@ pkgs.testers.runNixOSTest {
 
     services.smtp-to-telegram = {
       enable = true;
-      listen = [ "0.0.0.0:25" ];
+      listen = [
+        "0.0.0.0:25"
+        "[::]:25"
+      ];
       hostname = "relay.test";
       allowAnonymous = true;
       credentialsFile = "/etc/smtp-to-telegram-test/credentials";
@@ -86,6 +89,10 @@ pkgs.testers.runNixOSTest {
         assert last["fields"]["chat_id"] == "4242", last
         assert last["fields"]["parse_mode"] == "MarkdownV2", last
         assert last["fields"]["text"] == "*anonymous alert \\(1\\)*\nrouter@test\n\nlink down", last
+
+    with subtest("IPv4 and IPv6 wildcards listen side by side"):
+        machine.succeed("swaks --server ::1 --port 25 --ehlo client.test --from router@test --to alerts@test --header 'Subject: over v6'")
+        assert requests()[-1]["fields"]["text"].startswith("*over v6*"), requests()[-1]
 
     with subtest("authenticated delivery"):
         for mechanism in ["PLAIN", "LOGIN"]:

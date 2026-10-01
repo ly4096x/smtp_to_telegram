@@ -20,6 +20,7 @@ use std::time::Duration;
 use base64::Engine;
 use base64::alphabet;
 use base64::engine::{DecodePaddingMode, GeneralPurpose, GeneralPurposeConfig};
+use socket2::{Domain, Protocol, Socket, Type};
 use tokio::io::{AsyncBufRead, AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
 use tokio::net::{TcpListener, TcpStream};
@@ -48,6 +49,25 @@ const BASE64: GeneralPurpose = GeneralPurpose::new(
 struct Shared {
     config: Arc<Config>,
     telegram: TelegramClient,
+}
+
+/// Opens a listening socket. An IPv6 address is bound IPv6-only, so
+/// `0.0.0.0:25` and `[::]:25` can be listed together instead of colliding
+/// on Linux's dual-stack default. Must be called inside a tokio runtime.
+pub fn bind_listener(address: SocketAddr) -> io::Result<TcpListener> {
+    let socket = Socket::new(
+        Domain::for_address(address),
+        Type::STREAM,
+        Some(Protocol::TCP),
+    )?;
+    if address.is_ipv6() {
+        socket.set_only_v6(true)?;
+    }
+    socket.set_reuse_address(true)?;
+    socket.bind(&address.into())?;
+    socket.listen(1024)?;
+    socket.set_nonblocking(true)?;
+    TcpListener::from_std(socket.into())
 }
 
 /// Serves SMTP on `listeners` until `shutdown` resolves, then stops
@@ -793,6 +813,21 @@ mod tests {
         assert_eq!(strip_prefix_ignore_case("from:<x>", "FROM:"), Some("<x>"));
         assert_eq!(strip_prefix_ignore_case("FRO", "FROM:"), None);
         assert_eq!(strip_prefix_ignore_case("FRÖM:", "FROM:"), None);
+    }
+
+    #[tokio::test]
+    async fn ipv4_and_ipv6_wildcards_can_share_a_port() {
+        let v4 = bind_listener("0.0.0.0:0".parse().unwrap()).unwrap();
+        let port = v4.local_addr().unwrap().port();
+        match bind_listener(SocketAddr::from((std::net::Ipv6Addr::UNSPECIFIED, port))) {
+            Ok(v6) => assert_eq!(v6.local_addr().unwrap().port(), port),
+            // EAFNOSUPPORT / EADDRNOTAVAIL: no IPv6 here (some build
+            // sandboxes), so there is nothing to collide with.
+            Err(e) if matches!(e.raw_os_error(), Some(97 | 99)) => {
+                eprintln!("skipped, no IPv6: {e}")
+            }
+            Err(e) => panic!("binding [::]:{port} next to 0.0.0.0:{port} failed: {e}"),
+        }
     }
 
     #[tokio::test]

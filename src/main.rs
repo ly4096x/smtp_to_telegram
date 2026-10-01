@@ -4,11 +4,11 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use clap::Parser;
-use tokio::net::TcpListener;
 use tokio::signal::unix::{SignalKind, signal};
 use tracing::{error, info};
 
 use smtp_to_telegram::config::{Cli, Config};
+use smtp_to_telegram::smtp::bind_listener;
 
 fn init_logging(level: tracing::Level) {
     let builder = tracing_subscriber::fmt()
@@ -43,9 +43,8 @@ async fn wait_for_shutdown_signal() {
 async fn run(config: Config) -> anyhow::Result<()> {
     let mut listeners = Vec::new();
     for address in &config.smtp.listen {
-        let listener = TcpListener::bind(address)
-            .await
-            .with_context(|| format!("cannot listen on {address}"))?;
+        let listener =
+            bind_listener(*address).with_context(|| format!("cannot listen on {address}"))?;
         info!("listening for SMTP on {address}");
         listeners.push(listener);
     }

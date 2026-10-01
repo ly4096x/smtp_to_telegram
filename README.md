@@ -22,8 +22,8 @@ with the Go version; see [Migrating from the Go version](#migrating-from-the-go-
 4. Run it:
 
    ```sh
-   nix build github:ly4096x/smtp_to_telegram/rust     # or: cargo build --release
-   printf '%s' '<TOKEN>' > bot-token
+   nix build github:ly4096x/smtp_to_telegram/rust   # or cargo build --release: target/release/
+   (umask 077; printf '%s' '<TOKEN>' > bot-token)
    ./result/bin/smtp_to_telegram \
        --telegram-bot-token-file bot-token \
        --telegram-chat-ids 123456789,-1001234567890 \
@@ -58,7 +58,7 @@ variable is visible in `/proc/<pid>/environ` to root and to the same user.
 
 | Flag | Environment | Default | Meaning |
 | --- | --- | --- | --- |
-| `--smtp-listen ADDR` | `ST_SMTP_LISTEN` | `127.0.0.1:2525` | Address to listen on; repeat the flag or separate with commas for several. |
+| `--smtp-listen ADDR` | `ST_SMTP_LISTEN` | `127.0.0.1:2525` | Address to listen on; repeat the flag or separate with commas for several. IPv6 addresses are bound IPv6-only, so list `0.0.0.0:25` and `[::]:25` for both families. |
 | `--smtp-primary-host NAME` | `ST_SMTP_PRIMARY_HOST` | system host name | Name in the greeting and the EHLO reply. |
 | `--smtp-max-envelope-size SIZE` | `ST_SMTP_MAX_ENVELOPE_SIZE` | `50m` | Largest accepted message (`10m` = 10 000 000 bytes, `4MiB` = 4 194 304). |
 | `--smtp-max-connections N` | `ST_SMTP_MAX_CONNECTIONS` | `100` | Simultaneous connections; extra ones get `421`. |
