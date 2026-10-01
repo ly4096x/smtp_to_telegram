@@ -1,0 +1,35 @@
+[package]
+name = "smtp_to_telegram"
+version = "0.2.0"
+edition = "2024"
+rust-version = "1.85"
+description = "A small SMTP server that forwards every incoming email to Telegram chats"
+license = "MIT"
+repository = "https://github.com/ly4096x/smtp_to_telegram"
+publish = false
+
+[dependencies]
+anyhow = "1.0.104"
+base64 = "0.23.1"
+clap = { version = "4.6.7", features = ["derive", "env"] }
+gethostname = "1.1.0"
+ipnet = "2.12.2"
+mail-parser = { version = "0.11.9", features = ["full_encoding"] }
+mime_guess = "2.0.5"
+reqwest = { version = "0.13.5", default-features = false, features = ["rustls-no-provider", "multipart", "form", "system-proxy", "socks"] }
+rustls = { version = "0.23.45", default-features = false, features = ["ring", "std", "tls12", "logging"] }
+rustls-native-certs = "0.8.4"
+webpki-root-certs = "1.0.9"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "net", "io-util", "time", "signal", "sync"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", default-features = false, features = ["fmt", "ansi", "std"] }
+
+[dev-dependencies]
+axum = { version = "0.8.9", default-features = false, features = ["http1", "tokio", "form", "multipart"] }
+lettre = { version = "0.11.23", default-features = false, features = ["smtp-transport", "tokio1", "builder"] }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
