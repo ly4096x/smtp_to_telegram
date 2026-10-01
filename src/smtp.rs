@@ -245,6 +245,20 @@ fn parse_path(s: &str) -> Option<(String, &str)> {
     Some((address.to_string(), params.trim()))
 }
 
+/// Whether an authenticated `user` may send as `sender`: the part before
+/// the last `@` must be the user name, ASCII case ignored, at any domain.
+/// A user name that is itself an address must be the whole sender. The
+/// null sender belongs to nobody.
+fn sender_owned_by(sender: &str, user: &str) -> bool {
+    if user.contains('@') {
+        return sender.eq_ignore_ascii_case(user);
+    }
+    match sender.rsplit_once('@') {
+        Some((local, domain)) => !domain.is_empty() && local.eq_ignore_ascii_case(user),
+        None => false,
+    }
+}
+
 enum Flow {
     Continue,
     Close,
@@ -490,6 +504,15 @@ impl Session {
         let Some((address, params)) = parse_path(rest) else {
             return self.reply(501, "5.1.7 Bad sender address syntax").await;
         };
+        // An authenticated client sends as itself; anonymous ones are not
+        // checked (with --allow-anonymous their sender proves nothing).
+        if let Some(user) = self.auth_user.as_deref() {
+            if !sender_owned_by(&address, user) {
+                let text = format!("5.7.1 <{address}>: Sender address not owned by user {user}");
+                warn!(peer = %self.peer, user = %user, from = %address, "rejected MAIL FROM not owned by the authenticated user");
+                return self.reply(553, &text).await;
+            }
+        }
         for param in params.split_whitespace() {
             if let Some(size) = strip_prefix_ignore_case(param, "SIZE=") {
                 match size.parse::<u64>() {
@@ -806,6 +829,21 @@ mod tests {
         assert_eq!(parse_path("<@relay:a@b>"), Some(("a@b".into(), "")));
         assert_eq!(parse_path("<a b@c>"), None);
         assert_eq!(parse_path("<a@b"), None);
+    }
+
+    #[test]
+    fn senders_owned_by_a_user() {
+        assert!(sender_owned_by("alert@X-Linode.x.julycat.com", "alert"));
+        assert!(sender_owned_by("Alert@example.org", "alert"));
+        assert!(!sender_owned_by("alerts-test@julycat.com", "alert"));
+        assert!(!sender_owned_by("x@alert@y", "alert"));
+        assert!(!sender_owned_by("alert", "alert"));
+        assert!(!sender_owned_by("alert@", "alert"));
+        assert!(!sender_owned_by("", "alert"));
+        // A user name that is an address owns exactly that address.
+        assert!(sender_owned_by("alice@sclx.me", "alice@sclx.me"));
+        assert!(sender_owned_by("alice@SCLX.ME", "alice@sclx.me"));
+        assert!(!sender_owned_by("alice@other.org", "alice@sclx.me"));
     }
 
     #[test]

@@ -112,6 +112,12 @@ clear. The rules follow from that:
   `530 5.7.0 Authentication required`.
 - With `--allow-anonymous`, both authenticated and anonymous clients can send.
   A client that does try AUTH must still get the password right.
+- An authenticated client sends as itself: the `MAIL FROM` address must be
+  its user name at any domain (`alice@…` for user `alice`, ASCII case
+  ignored), or exactly the user name when that is itself an address. Any
+  other sender, the null sender included, gets `553 5.7.1` and the session
+  may try again. Anonymous clients are not checked, so with
+  `--allow-anonymous` on, the sender of an anonymous message proves nothing.
 - A wrong user or password gets `535 5.7.8`; the third failure on one
   connection closes it with `421`. Passwords are compared without stopping
   at the first differing byte.
@@ -260,7 +266,7 @@ covered by the module go in `extraArgs`.
 | `ST_TELEGRAM_API_PARSE_MODE` / `--telegram-api-parsemode` | `ST_TELEGRAM_API_PARSE_MODE` / `--telegram-api-parse-mode`. Values are now escaped in HTML and Markdown mode too, not only MarkdownV2; a backslash is escaped in MarkdownV2. |
 | `ST_TELEGRAM_API_POSTFIX` | Removed (the program refuses to start if it is set). Use the parse mode option and `--telegram-api-extra-param`. |
 | Upstream's `ST_FORWARDED_ATTACHMENT_*`, `ST_MESSAGE_LENGTH_TO_SEND_AS_FILE`, `ST_LOG_LEVEL` | Same names; these features were not in the fork. |
-| Anyone could send | Set `--allow-anonymous` to keep that, and/or configure credentials. |
+| Anyone could send | Set `--allow-anonymous` to keep that, and/or configure credentials. An authenticated client must then use its own name as the sender. |
 | Telegram failure: `554` (the sender gives up) | `451` (the sender retries), as upstream later changed it. |
 
 ## Why a hand-written SMTP server

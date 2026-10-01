@@ -35,7 +35,7 @@ async fn auth_only_accepts_plain() {
         server.addr,
         Some((USER, PASSWORD)),
         Mechanism::Plain,
-        simple_message("plain", "b"),
+        message_from(USER_ADDRESS, "plain", "b"),
     )
     .await
     .unwrap();
@@ -58,7 +58,7 @@ async fn auth_only_accepts_login() {
         server.addr,
         Some((USER, PASSWORD)),
         Mechanism::Login,
-        simple_message("login", "b"),
+        message_from(USER_ADDRESS, "login", "b"),
     )
     .await
     .unwrap();
@@ -115,7 +115,7 @@ async fn auth_and_anonymous_accepts_both() {
         server.addr,
         Some((USER, PASSWORD)),
         Mechanism::Plain,
-        simple_message("plain", "b"),
+        message_from(USER_ADDRESS, "plain", "b"),
     )
     .await
     .unwrap();
@@ -123,7 +123,7 @@ async fn auth_and_anonymous_accepts_both() {
         server.addr,
         Some((USER, PASSWORD)),
         Mechanism::Login,
-        simple_message("login", "b"),
+        message_from(USER_ADDRESS, "login", "b"),
     )
     .await
     .unwrap();
@@ -256,7 +256,47 @@ async fn auth_protocol_details() {
 
     // Only once per session.
     assert_eq!(client.cmd("AUTH LOGIN").await.0, 503);
-    assert_eq!(client.cmd("MAIL FROM:<from@test>").await.0, 250);
+    assert_eq!(client.cmd("MAIL FROM:<alice@test>").await.0, 250);
+}
+
+#[tokio::test]
+async fn an_authenticated_client_sends_as_itself() {
+    let telegram = MockTelegram::start().await;
+    let server = TestServer::start(auth_config(&telegram.prefix, true)).await;
+
+    let mut client = RawClient::connect(server.addr).await;
+    client.cmd("EHLO client.test").await;
+    let (code, _) = client
+        .cmd(&format!(
+            "AUTH PLAIN {}",
+            b64(&format!("\0{USER}\0{PASSWORD}"))
+        ))
+        .await;
+    assert_eq!(code, 235);
+    // Someone else's address, the null sender, no domain: all refused, and
+    // the session can go on to try again.
+    for sender in ["<mallory@test>", "<>", "<alice>", "<alice@>"] {
+        let (code, text) = client.cmd(&format!("MAIL FROM:{sender}")).await;
+        assert_eq!(code, 553, "{sender}: {text}");
+    }
+    // Its own name at any domain, in any case.
+    assert_eq!(client.cmd("MAIL FROM:<Alice@elsewhere.test>").await.0, 250);
+
+    // Anonymous clients are not checked.
+    let mut anonymous = RawClient::connect(server.addr).await;
+    anonymous.cmd("EHLO client.test").await;
+    assert_eq!(anonymous.cmd("MAIL FROM:<mallory@test>").await.0, 250);
+
+    // End to end: a mismatched sender is refused and nothing is forwarded.
+    let result = send(
+        server.addr,
+        Some((USER, PASSWORD)),
+        Mechanism::Plain,
+        simple_message("s", "b"),
+    )
+    .await;
+    assert_rejected(result, "553");
+    assert!(telegram.requests().is_empty());
 }
 
 #[tokio::test]

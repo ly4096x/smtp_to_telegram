@@ -263,8 +263,15 @@ pub fn mailer(
 }
 
 pub fn simple_message(subject: &str, body: &str) -> Message {
+    message_from("from@test", subject, body)
+}
+
+/// A sender USER owns, which an authenticated client has to use.
+pub const USER_ADDRESS: &str = "alice@test";
+
+pub fn message_from(from: &str, subject: &str, body: &str) -> Message {
     Message::builder()
-        .from("from@test".parse().unwrap())
+        .from(from.parse().unwrap())
         .to("to@test".parse().unwrap())
         .subject(subject)
         .body(body.to_string())
